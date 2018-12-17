@@ -92,7 +92,7 @@ function(input, output) {
     D_PN[is.na(D_PN)] <- 0
     ggplot(D_PN, aes(x=x,y=per,color=x)) +
       geom_point(size=2)+
-      xlab(input$Factors_num)+
+      xlab(input$Factors_num)+ylab("Percentage")+
       theme_classic()+
       ggtitle("Percentage of Suspects", subtitle = "----among factors")+
       theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
