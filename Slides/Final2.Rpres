@@ -1,0 +1,366 @@
+```{r,echo=FALSE}
+pacman::p_load(benford.analysis, dplyr, ggplot2, stringr)
+```
+
+Does Lot Area follow Benford's law?
+========================================================
+author: Tianying Xu
+date: 2018/12/16
+autosize: true
+font-family: 'Helvetica'
+
+Goals
+========================================================
+
+- Does Lot Area follow Benford's law?
+- What may cause data to deviate against Benfrod's law?
+
+
+Method
+====================================
+Data Source
+- Housing price data on kaggle.com
+  - competition to predict house prcie
+
+***
+
+Analysis
+  - 1. Benford's law
+  - 2. Similar Features
+  
+
+Benford's Law
+========================================================
+left: 70%
+```{r, echo=FALSE,dpi=300,out.width="1820px", out.height="700px"}
+D <- read.csv("train.csv",header=T)
+#Lot Area
+bfd_area <- benford(D$LotArea)
+plot(bfd_area)
+```
+
+***
+
+- Digits from "10"-"15" and after "70" have deviations from the Benford's Law
+
+Similar Feature: Summary of "suspects"
+========================================================
+```{r}
+D_spts <- getSuspects(bfd_area,D)
+summary(D_spts$LotArea)
+```
+
+Similar Feature:
+========================================================
+- 1) Outside Living Conditions
+  - a. Zoning
+  - b. Building Type
+  - c. Linear Feet of Street Connected to Property
+  - d. Quality
+- 2) Outside Living Conditions
+  - a. Garage Type
+  - b. Screen Porch Area 
+  - c. Total Rooms Above Grade
+- 3) Time
+- 4) Geography
+
+1) a. Zoning
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1200px",out.height="300px",dpi=500}
+# get suspects
+suspects_area <- getSuspects(bfd_area, D,how.many = 2)
+
+# density plot of suspects & non-suspects
+D1 <- D %>% 
+  mutate(ifsuspect=ifelse(Id %in% suspects_area$Id,1,0))
+ggplot(D1, aes(x=MSZoning,fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_histogram(stat="density",position="dodge") +
+  guides(fill=guide_legend(title="suspect or not"))+
+  theme_classic()+
+  ggtitle("Density Plots of Zoning",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - "RL" has more density among "suspects" than non-suspects
+
+
+
+1) a. Zoning
+========================================================
+```{r,echo=FALSE,out.width="800px",out.height="500px",dpi=600}
+# density plot between RL and other places
+D_RL <- D %>% mutate(RL=ifelse(MSZoning=="RL",1,0))
+ggplot(D_RL,aes(x=LotArea,y=..density..,fill=factor(RL),group=factor(RL)))+
+  geom_density(alpha=0.5)+
+  guides(fill=guide_legend(title="RL or not"))+
+  theme_classic()+
+  ggtitle("Density Plots of Lot Area",subtitle = "----between RL and other places")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+
+1) a. Zoning
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1200px",out.height="500px",dpi=600}
+# percentage of lot area start with "10"/"11" between RL and others
+D_RL_1011 <- D_RL %>%
+  mutate(s1011=str_detect(LotArea,"^1[01]"))
+ggplot(D_RL_1011,mapping=aes(x=factor(RL),fill=factor(s1011)))+
+  geom_bar(position="fill")+
+  guides(fill=guide_legend(title="start with '10''11' \n or not"))+
+  xlab("RL or not")+
+  theme_classic()+
+  ggtitle("Percentage of Lot Area start with '10''11'", subtitle = "----between RL and other places")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+
+  - "RL" place: higher proportion of lot area start with digits "10" or "11", which may lead to deviation.
+
+
+1) b. Building Type
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1000px",out.height="450px",dpi=600}
+ggplot(D1, aes(x=BldgType,fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_histogram(stat="density",position="dodge")+
+  guides(fill=guide_legend(title="suspect or not"))+
+  xlab("Building Type")+
+  theme_classic()+
+  ggtitle("Density Plots of Building Type",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - "1Fam" is more popular among suspects than among non-suspects.
+
+
+1) c. Linear Feet of Street Connected
+========================================================
+left: 80%
+```{r,echo=FALSE,out.width="1600px",out.height="450px",dpi=500}
+D2 <- D1
+D2[is.na(D2)] <- 0
+ggplot(D2,aes(x=LotFrontage,y=..density..,fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_density(alpha=0.5)+
+  guides(fill=guide_legend(title="suspect \n or not"))+
+  xlab("Linear Feet of Street Connected to Property")+
+  theme_classic()+
+  ggtitle("Density Plots of Linear Feet of Street",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - Most suspects has 100 feet long street connected to their property.
+
+
+2) a. Garage Type
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1200px",out.height="450px",dpi=500}
+ggplot(D1, aes(x=GarageType,y=..density..,fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_density(alpha=0.5)+
+  guides(fill=guide_legend(title="suspect \n or not"))+
+  xlab("Linear Feet of Street Connected to Property")+
+  theme_classic()+
+  ggtitle("Density Plots of Linear Feet of Garage Type",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - "Suspects" usually have more garage attached than others.
+  
+  
+2) b. Screen Porch Area 
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1000px",out.height="450px",dpi=500}
+ggplot(D1, aes(x=ScreenPorch,fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_histogram(stat="density",position="dodge")+
+  guides(fill=guide_legend(title="suspect or not"))+
+  xlab("Screen Porch Area")+
+  theme_classic()+
+  ggtitle("Density Plots of Screen Porch Area",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - "Suspects" are more scattered, varing from 0 too almost 500 square feet.
+  - Non-suspects are all under 300 square feet
+  
+  
+2) c. Total Rooms Above Grade
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1000px",out.height="300px",dpi=500}
+ggplot(D1, aes(x=factor(TotRmsAbvGrd),fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_histogram(stat="density",position="dodge")+
+  guides(fill=guide_legend(title="suspect or not"))+
+  xlab("Total rooms above grade")+
+  theme_classic()+
+  ggtitle("Density Plots of Total rooms above grade",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - More rooms above grade among "suspects" than others.
+
+
+2) d. Quality
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1000px",out.height="450px",dpi=500}
+#quality
+ggplot(D1, aes(x=factor(OverallQual),fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_histogram(stat="density",position="dodge")+
+  guides(fill=guide_legend(title="suspect or not"))+
+  xlab("Overall Quality")+
+  theme_classic()+
+  ggtitle("Density Plots of Overall Quality",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - "Suspects" tend to have higher overall quality than others
+
+
+3) Time
+========================================================
+```{r,echo=FALSE,out.width="1000px",out.height="600px",dpi=500}
+# Density Plots of Year Built
+ggplot(D1, aes(x=YearBuilt,y=..density..,fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_density(alpha=0.5)+
+  guides(fill=guide_legend(title="suspect or not"))+
+  xlab("Year Built")+
+  theme_classic()+
+  ggtitle("Density Plots of Year Built",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+
+3) Time
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1000px",out.height="450px",dpi=500}
+# Data for plot
+D_sus <- D1 %>%
+  filter(ifsuspect=="1") %>%
+  group_by(YearBuilt) %>%
+  summarise(n=n())
+D2 <- D1 %>%
+  group_by(YearBuilt) %>%
+  summarise(n=n())
+D_ts <- data.frame(YearBuilt=1872:2010)
+D_ts <- left_join(D_ts,D_sus)
+D_ts <- left_join(D_ts,D2,by="YearBuilt")
+D_ts[is.na(D_ts)] <- 0
+D_ts <- D_ts %>%
+  mutate(per=n.x/n.y)
+D_ts[is.na(D_ts)] <- 0
+
+# Plot for Percent of Suspects Every Year
+ggplot(D_ts, aes(x=YearBuilt,y=per))+
+  geom_point()+
+  geom_smooth(se=FALSE)+
+  xlab("Year Built")+ylab("Percentage of Suspects")+
+  theme_classic()+
+  ggtitle("Percent of Suspects Every Year")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+``` 
+  
+***
+  
+  - "Suspects" are mostly built in late years
+  - Percentage of "suspects" in all built houses every year increases since 1940.
+  
+  
+4) Geography
+========================================================
+```{r,echo=FALSE,out.width="950px",out.height="600px",dpi=500}
+# Density Plots of Neighborhood
+ggplot(D1, aes(x=factor(Neighborhood),fill=factor(ifsuspect),group=factor(ifsuspect)))+
+  geom_histogram(stat="density",position="dodge")+
+  theme(axis.text.x = element_text(angle=45))+
+  guides(fill=guide_legend(title="suspect or not"))+
+  xlab("Year Built")+
+  theme_classic()+
+  ggtitle("Density Plots of Neighborhood",subtitle = "----between suspects and non-suspects")+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+
+4) Geography
+========================================================
+left: 70%
+```{r,echo=FALSE,out.width="1200px",out.height="650px",dpi=500}
+# Percentage of "suspects" in every neighborhood
+D_geo <- D1 %>% 
+  group_by(Neighborhood) %>% 
+  summarise(per=sum(ifsuspect=="1")/n())
+ggplot(D_geo)+
+  geom_bar(mapping=aes(x=reorder(Neighborhood,desc(per)),y=per),stat="identity",fill="skyblue")+
+  theme(axis.text.x = element_text(angle=45))+
+  ylab("percentage")+
+  ggtitle("Percentage of Suspects Every Neighborhood")
+  theme_classic()+
+  theme(plot.title = element_text(size=17, face="bold",hjust = 0.5),plot.subtitle = element_text(size=15, face="bold",hjust = 1),
+        axis.title.x = element_text(face="bold",size=13), axis.title.y = element_text(face="bold",size=15),
+        axis.text.x  = element_text(face="bold",angle=45,vjust=0.5,size=13),axis.text.y  = element_text(face="bold",angle=45,vjust=0.5,size=13), 
+        legend.title=element_text(face="bold",size=15), legend.text = element_text(face="bold",size=15))
+```
+  
+***
+  
+  - Neighborhood Northwest Ames and has the highest proportion of "suspects"
+  - A large portion of "suspects" are in this neighborhood. 
+
+
+Conclusion
+========================================================
+ - Lot area in this dataset does not follow Benford's law.
+ - Deviation from Benford's law may be due to the high proportion of low reidential density places, especially neighborhood Northwest Ames.
+ - There are many similar features among "suspects".
