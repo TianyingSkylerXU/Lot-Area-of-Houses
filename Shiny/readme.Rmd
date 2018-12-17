@@ -1,0 +1,12 @@
+---
+title: "Shiny"
+author: "Tianying Xu"
+date: "2018年12月17日"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This Shiny has been pulished on: http://tianying-skyler-xu.shinyapps.io/615-Final-Shiny
