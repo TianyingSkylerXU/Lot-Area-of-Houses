@@ -1,0 +1,16 @@
+---
+title: "readme"
+author: "Tianying Xu"
+date: "2018年12月17日"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Slides
+
+This slide has been published. 
+
+url: http://rpubs.com/TianyingXu/452180
